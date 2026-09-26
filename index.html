@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cutie's Task Jar </title>
+<link rel="icon" type="image/png" href="favicon.png?v=2" />
+<link rel="shortcut icon" href="favicon.png?v=2" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <!-- floating stickers scattered on the page -->
+  <div class="sticker sticker-1" aria-hidden="true">✨</div>
+  <div class="sticker sticker-2" aria-hidden="true">🌸</div>
+  <div class="sticker sticker-3" aria-hidden="true">🎀</div>
+  <div class="sticker sticker-4" aria-hidden="true">🍡</div>
+  <div class="sticker sticker-5" aria-hidden="true">🧸</div>
+  <div class="sticker sticker-6" aria-hidden="true">☕</div>
+  <div class="sticker sticker-7" aria-hidden="true">✨</div>
+  <div class="sticker sticker-8" aria-hidden="true">🌸</div>
+  <div class="sticker sticker-9" aria-hidden="true">🎀</div>
+  <div class="sticker sticker-10" aria-hidden="true">🍡</div>
+  <div class="sticker sticker-11" aria-hidden="true">🧸</div>
+  <div class="sticker sticker-12" aria-hidden="true">☕</div>
+
+  <div class="page">
+
+    <header class="cover">
+      <div class="washi washi-top" aria-hidden="true"></div>
+      <p class="eyebrow-note">— today's page —</p>
+      <h1><span id="ownerPrefix">Cutie's </span>Task Jar <span class="jar-emoji">🫙</span></h1>
+      <p id="greetingLine" class="greeting-line"></p>
+      <p id="todayDate" class="date-line"></p>
+      <div class="progress-wrap" aria-label="Today's overall progress">
+        <div class="progress-track">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <span id="progressLabel" class="progress-label">0 / 0 done</span>
+      </div>
+    </header>
+
+    <section id="taskBoard" class="task-board" aria-label="Today's tasks">
+      <!-- task cards get rendered here by script.js -->
+    </section>
+
+    <p id="emptyState" class="empty-state">jar's empty rn... add a task and let's get thattt bread 🍞✨</p>
+
+    <section class="add-card" aria-label="Add a new task">
+      <h2>naya task likho 📝</h2>
+      <input id="taskTitleInput" type="text" placeholder="e.g. finish FYP report..." maxlength="80" />
+
+      <div id="partsList" class="parts-list"></div>
+
+      <button id="addPartBtn" type="button" class="add-part-link">+ add a part (optional)</button>
+
+      <div class="add-card-actions">
+        <button id="addTaskBtn" type="button" class="main-btn">pin it to the jar 📌</button>
+      </div>
+    </section>
+
+    <button id="giggleBtn" class="giggle-btn" type="button">need a giggle? 😂</button>
+    <button id="resetAllBtn" class="reset-all-btn" type="button">reset everything 🔄</button>
+
+  </div>
+
+  <!-- first-visit onboarding: gender then name -->
+  <div id="onboardOverlay" class="overlay hidden">
+    <div class="popup-card onboard-card">
+      <div id="onboardStep1">
+        <div class="popup-emoji">👋</div>
+        <p class="popup-text">hii, before we jump in...</p>
+        <div class="gender-choice">
+          <button id="genderMaleBtn" type="button" class="main-btn small">Handsome 🐻</button>
+          <button id="genderFemaleBtn" type="button" class="main-btn small peach">Pretty 🐰</button>
+        </div>
+      </div>
+      <div id="onboardStep2" class="hidden">
+        <div class="popup-emoji">🫶</div>
+        <p id="onboardGreeting" class="popup-text">Hi cutie, what's your name?</p>
+        <input id="onboardNameInput" type="text" placeholder="type your name..." maxlength="24" />
+        <button id="onboardSubmitBtn" type="button" class="main-btn small">let's gooo 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- task-tick popup -->
+  <div id="popupOverlay" class="overlay hidden">
+    <div class="popup-card">
+      <div id="popupEmoji" class="popup-emoji">🫰</div>
+      <p id="popupText" class="popup-text"></p>
+      <button id="popupClose" class="main-btn small">okayyy 🎉</button>
+    </div>
+  </div>
+
+  <!-- giggle popup -->
+  <div id="giggleOverlay" class="overlay hidden">
+    <div class="popup-card giggle">
+      <div class="popup-emoji">🤭</div>
+      <p id="giggleText" class="popup-text"></p>
+      <button id="giggleClose" class="main-btn small">hehe okay</button>
+    </div>
+  </div>
+
+  <!-- end-of-day check-in -->
+  <div id="doneCheckOverlay" class="overlay hidden">
+    <div class="popup-card">
+      <div class="popup-emoji">🫙</div>
+      <p class="popup-text">jar's all clear for today ✨<br>done for today?</p>
+      <div class="done-check-actions">
+        <button id="doneCheckYesBtn" class="main-btn small" type="button">Yess 🙌</button>
+        <button id="doneCheckNoBtn" class="ghost-btn" type="button">not yet, more coming</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- end of day dua popup -->
+  <div id="duaOverlay" class="overlay hidden">
+    <div class="dua-card">
+      <div class="dua-stars" aria-hidden="true">✨🌙✨</div>
+      <p class="dua-kicker">jar's all done for today</p>
+      <p id="duaText" class="dua-text"></p>
+      <p class="dua-rest">okay now let's get some rest, cutie 🌙💤 you earned it.</p>
+      <button id="duaClose" class="main-btn small">Ameen, goodbyee 🤍</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
