@@ -257,7 +257,10 @@
 
   let tasks = [];
   const STORAGE_KEY = todayKey();
+  const TODAY_STR = STORAGE_KEY.replace("taskjar-", "");
   const PROFILE_KEY = "taskjar-profile"; // persists across days, unlike task data
+  const DECISION_KEY = `taskjar-decision-${TODAY_STR}`; // "continue" | "new" — asked once per day
+  const DAY_KEY_REGEX = /^taskjar-(\d{4}-\d{2}-\d{2})$/;
 
   function loadProfile() {
     try {
@@ -298,10 +301,13 @@
     return tasks.every((t) => t.parts.every((p) => p.done));
   }
 
+  const isTaskComplete = (t) => t.parts.every((p) => p.done);
+
   // ---------- DOM refs ----------
 
   const $ = (id) => document.getElementById(id);
 
+  const eyebrowNoteEl = $("eyebrowNote");
   const todayDateEl = $("todayDate");
   const greetingLineEl = $("greetingLine");
   const progressFillEl = $("progressFill");
@@ -334,6 +340,11 @@
   const doneCheckYesBtn = $("doneCheckYesBtn");
   const doneCheckNoBtn = $("doneCheckNoBtn");
 
+  const carryOverlay = $("carryOverlay");
+  const carryText = $("carryText");
+  const carryContinueBtn = $("carryContinueBtn");
+  const carryFreshBtn = $("carryFreshBtn");
+
   const onboardOverlay = $("onboardOverlay");
   const onboardStep1 = $("onboardStep1");
   const onboardStep2 = $("onboardStep2");
@@ -345,6 +356,7 @@
 
   let pendingDua = false;
   let selectedGender = null;
+  let carryCandidates = []; // earlier days that still have unfinished tasks
 
   // "Handsome" picks the cutie greeting, "Pretty" picks the gorgeous greeting —
   // swap the two strings below if you'd rather have it the other way round.
@@ -367,6 +379,113 @@
       day: "numeric"
     });
   }
+
+  function renderEyebrow() {
+    let decision = null;
+    try {
+      decision = localStorage.getItem(DECISION_KEY);
+    } catch (e) {
+      /* storage unavailable */
+    }
+    eyebrowNoteEl.textContent =
+      decision === "continue" ? "— continuing your previous tasks —" : "— today's page —";
+  }
+
+  // ---------- new-day carry-over ----------
+
+  function parseDayString(str) {
+    const [y, m, d] = str.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function friendlyDayLabel(str) {
+    const then = parseDayString(str);
+    const now = new Date();
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round((startToday - then) / 86400000);
+    if (diffDays === 1) return "yesterday";
+    return then.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  }
+
+  // finds earlier days (not today) that still have unfinished tasks
+  // and haven't already been dealt with via this popup
+  function findCarryCandidates() {
+    const found = [];
+    try {
+      Object.keys(localStorage).forEach((key) => {
+        const match = key.match(DAY_KEY_REGEX);
+        if (!match) return;
+        const dateStr = match[1];
+        if (dateStr >= TODAY_STR) return; // only days before today
+        if (localStorage.getItem(`taskjar-handled-${dateStr}`)) return;
+        let dayTasks;
+        try {
+          dayTasks = JSON.parse(localStorage.getItem(key)) || [];
+        } catch (e) {
+          return;
+        }
+        const unfinished = dayTasks.filter((t) => !isTaskComplete(t));
+        if (unfinished.length > 0) {
+          found.push({ dateStr, key, unfinished });
+        }
+      });
+    } catch (e) {
+      return [];
+    }
+    found.sort((a, b) => (a.dateStr < b.dateStr ? 1 : -1)); // latest first
+    return found;
+  }
+
+  function maybeAskAboutPreviousDay() {
+    let alreadyDecided = null;
+    try {
+      alreadyDecided = localStorage.getItem(DECISION_KEY);
+    } catch (e) {
+      /* storage unavailable */
+    }
+    if (alreadyDecided) return;
+
+    carryCandidates = findCarryCandidates();
+    if (carryCandidates.length === 0) return;
+
+    const latest = carryCandidates[0];
+    const n = latest.unfinished.length;
+    const when = friendlyDayLabel(latest.dateStr);
+    carryText.innerHTML =
+      `new day, new page ✨<br>you still have ${n} unfinished task${n > 1 ? "s" : ""} from ${when}. ` +
+      `want to continue ${n > 1 ? "those" : "that one"} or start fresh today?`;
+    carryOverlay.classList.remove("hidden");
+  }
+
+  function finishCarryChoice(choice) {
+    if (choice === "continue") {
+      const latest = carryCandidates[0];
+      // bring the unfinished tasks (with their ticked parts) into today
+      tasks = latest.unfinished.concat(tasks);
+      saveTasks();
+    }
+    try {
+      localStorage.setItem(DECISION_KEY, choice);
+      // mark earlier days as handled so we don't ask about them again tomorrow
+      carryCandidates.forEach((c) => localStorage.setItem(`taskjar-handled-${c.dateStr}`, "1"));
+    } catch (e) {
+      /* storage unavailable */
+    }
+    carryCandidates = [];
+    carryOverlay.classList.add("hidden");
+    renderEyebrow();
+    renderBoard();
+  }
+
+  carryContinueBtn.addEventListener("click", () => finishCarryChoice("continue"));
+  carryFreshBtn.addEventListener("click", () => finishCarryChoice("new"));
+
+  // if the tab stays open past midnight, refresh when the user comes back
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && todayKey() !== STORAGE_KEY) {
+      location.reload();
+    }
+  });
 
   // ---------- add-task form: dynamic part rows ----------
 
@@ -630,6 +749,7 @@
   });
 
   // close overlays on backdrop click
+  // (the new-day popup is intentionally NOT here — it needs a choice)
   [popupOverlay, giggleOverlay, duaOverlay, doneCheckOverlay].forEach((ov) => {
     ov.addEventListener("click", (e) => {
       if (e.target === ov) ov.classList.add("hidden");
@@ -713,10 +833,13 @@
     renderDate();
     loadTasks();
     renderBoard();
+    renderEyebrow();
 
     const profile = loadProfile();
     if (profile) {
       applyProfileToHeader(profile);
+      // returning user: check if yesterday's (or an earlier day's) tasks were left unfinished
+      maybeAskAboutPreviousDay();
     } else {
       onboardOverlay.classList.remove("hidden");
     }
