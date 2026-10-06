@@ -32,7 +32,7 @@
 
     <header class="cover">
       <div class="washi washi-top" aria-hidden="true"></div>
-      <p class="eyebrow-note">— today's page —</p>
+      <p id="eyebrowNote" class="eyebrow-note">— today's page —</p>
       <h1><span id="ownerPrefix">Cutie's </span>Task Jar <span class="jar-emoji">🫙</span></h1>
       <p id="greetingLine" class="greeting-line"></p>
       <p id="todayDate" class="date-line"></p>
@@ -84,6 +84,18 @@
         <p id="onboardGreeting" class="popup-text">Hi cutie, what's your name?</p>
         <input id="onboardNameInput" type="text" placeholder="type your name..." maxlength="24" />
         <button id="onboardSubmitBtn" type="button" class="main-btn small">let's gooo 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- new-day popup: continue previous unfinished tasks or start fresh -->
+  <div id="carryOverlay" class="overlay hidden">
+    <div class="popup-card">
+      <div class="popup-emoji">🌅</div>
+      <p id="carryText" class="popup-text"></p>
+      <div class="done-check-actions">
+        <button id="carryContinueBtn" class="main-btn small" type="button">continue previous tasks 📌</button>
+        <button id="carryFreshBtn" class="main-btn small peach" type="button">start fresh today ✨</button>
       </div>
     </div>
   </div>
